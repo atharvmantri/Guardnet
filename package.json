@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tabler/icons-react": "^3.24.0",
     "@turf/helpers": "^6.5.0",
     "@turf/point-to-line-distance": "^6.5.0",
     "firebase": "^10.14.1",
