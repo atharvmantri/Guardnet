@@ -8,6 +8,7 @@ import {
 } from '@tabler/icons-react'
 import type { CommunityReport } from '../types'
 import { addCommunityReport, auth } from '../services/firebase'
+import { queueReport } from '../utils/reportQueue'
 import './reporting.css'
 
 type ReportModalProps = {
@@ -42,6 +43,9 @@ const ReportModal = ({ isOpen, lat, lng, onClose }: ReportModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState(
+    'Report submitted — helping your neighbors',
+  )
   const toastTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -61,18 +65,26 @@ const ReportModal = ({ isOpen, lat, lng, onClose }: ReportModalProps) => {
       return
     }
 
+    const reportPayload = {
+      userId: auth.currentUser?.uid ?? 'anonymous',
+      type: selectedType,
+      description: details.trim(),
+      lat,
+      lng,
+      timestamp: new Date().toISOString(),
+      upvotes: 0,
+    }
+
     setIsSubmitting(true)
 
     try {
-      await addCommunityReport({
-        userId: auth.currentUser?.uid ?? 'anonymous',
-        type: selectedType,
-        description: details.trim(),
-        lat,
-        lng,
-        timestamp: new Date().toISOString(),
-        upvotes: 0,
-      })
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        await queueReport(reportPayload)
+        setToastMessage('Report saved offline. Syncing when online.')
+      } else {
+        await addCommunityReport(reportPayload)
+        setToastMessage('Report submitted — helping your neighbors')
+      }
 
       setDetails('')
       setShowToast(true)
@@ -152,7 +164,7 @@ const ReportModal = ({ isOpen, lat, lng, onClose }: ReportModalProps) => {
         </form>
       </section>
       <div className={`report-toast ${showToast ? 'is-visible' : ''}`}>
-        Report submitted — helping your neighbors
+        {toastMessage}
       </div>
     </div>
   )

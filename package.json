@@ -14,6 +14,7 @@
     "@turf/helpers": "^6.5.0",
     "@turf/point-to-line-distance": "^6.5.0",
     "firebase": "^10.14.1",
+    "idb-keyval": "^6.2.1",
     "leaflet": "^1.9.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

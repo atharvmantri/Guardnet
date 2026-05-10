@@ -17,6 +17,56 @@ export default defineConfig({
         background_color: '#eff6ff',
         theme_color: '#1d4ed8',
       },
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) =>
+              url.hostname === 'tile.openstreetmap.org' ||
+              url.hostname.endsWith('.tile.openstreetmap.org'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'map-tiles',
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 604800,
+              },
+            },
+          },
+          {
+            urlPattern: ({ url }) =>
+              url.origin === 'https://api.open-meteo.com' ||
+              url.origin === 'https://api.openweathermap.org',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'weather-api',
+              networkTimeoutSeconds: 8,
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              expiration: {
+                maxAgeSeconds: 900,
+              },
+            },
+          },
+          {
+            urlPattern: ({ request }) =>
+              request.destination === 'style' ||
+              request.destination === 'script' ||
+              request.destination === 'image' ||
+              request.destination === 'font',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'static-assets',
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
+      },
     }),
   ],
 })

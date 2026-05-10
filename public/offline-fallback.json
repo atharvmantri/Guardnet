@@ -1,0 +1,15 @@
+{
+  "weather": {
+    "temp": 26,
+    "feelsLike": 27,
+    "humidity": 58,
+    "windSpeed": 6,
+    "precipitation": 0,
+    "condition": "Offline estimate",
+    "lat": 0,
+    "lng": 0,
+    "timestamp": "2026-05-10T00:00:00.000Z",
+    "source": "offline-fallback"
+  },
+  "disasters": []
+}
