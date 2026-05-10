@@ -66,3 +66,18 @@ export interface VolunteerAssignment {
   assignedAt: string
   completedAt: string | null
 }
+
+export interface Route {
+  geometry: {
+    type: 'LineString'
+    coordinates: Array<[number, number]>
+  }
+  durationSec: number
+  distanceKm: number
+  riskScore: number
+  nearestHospital: {
+    name: string
+    lat: number
+    lng: number
+  } | null
+}
