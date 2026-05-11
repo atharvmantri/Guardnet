@@ -1,5 +1,13 @@
 import type { WeatherData } from '../types'
 
+type WeatherOverride = (lat: number, lng: number) => Promise<WeatherData>
+
+let weatherOverride: WeatherOverride | null = null
+
+export const setWeatherOverride = (override: WeatherOverride | null) => {
+  weatherOverride = override
+}
+
 const CACHE_TTL_MS = 15 * 60 * 1000
 const CACHE_PREFIX = 'weather:'
 const CACHE_PRECISION = 3
@@ -175,6 +183,10 @@ export const getWeather = async (
   lat: number,
   lng: number,
 ): Promise<WeatherData> => {
+  if (weatherOverride) {
+    return weatherOverride(lat, lng)
+  }
+
   const cacheKey = getCacheKey(lat, lng)
   const cached = readCache(cacheKey)
   if (cached) {

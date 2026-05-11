@@ -26,6 +26,14 @@ import type {
   VolunteerAssignment,
 } from '../types'
 
+let communityReportsOverride: CommunityReport[] | null = null
+
+export const setCommunityReportsOverride = (
+  override: CommunityReport[] | null,
+) => {
+  communityReportsOverride = override
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -62,6 +70,20 @@ export async function getCommunityReports(
   lng: number,
   radiusKm: number,
 ): Promise<CommunityReport[]> {
+  if (communityReportsOverride) {
+    const center: [number, number] = [lat, lng]
+    return communityReportsOverride
+      .filter(
+        (report) =>
+          distanceBetween([report.lat, report.lng], center) <= radiusKm,
+      )
+      .sort(
+        (a, b) =>
+          (Date.parse(b.timestamp) || 0) - (Date.parse(a.timestamp) || 0),
+      )
+      .slice(0, 50)
+  }
+
   const center: [number, number] = [lat, lng]
   const radiusInM = radiusKm * 1000
   const bounds = geohashQueryBounds(center, radiusInM)

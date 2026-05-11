@@ -13,6 +13,7 @@
     "@tabler/icons-react": "^3.24.0",
     "@turf/helpers": "^6.5.0",
     "@turf/point-to-line-distance": "^6.5.0",
+    "driver.js": "^1.0.1",
     "firebase": "^10.14.1",
     "idb-keyval": "^6.2.1",
     "leaflet": "^1.9.4",

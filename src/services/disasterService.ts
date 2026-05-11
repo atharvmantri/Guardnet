@@ -4,6 +4,12 @@ const CACHE_KEY = 'disasters:active'
 const CACHE_TTL_MS = 10 * 60 * 1000
 const DEDUPE_DISTANCE_KM = 50
 
+let disasterOverride: DisasterEvent[] | null = null
+
+export const setDisasterOverride = (override: DisasterEvent[] | null) => {
+  disasterOverride = override
+}
+
 const severityRank: Record<DisasterEvent['severity'], number> = {
   low: 1,
   medium: 2,
@@ -368,6 +374,10 @@ const loadDisasters = async (): Promise<DisasterEvent[]> => {
 }
 
 export const getActiveDisasters = async (): Promise<DisasterEvent[]> => {
+  if (disasterOverride) {
+    return disasterOverride
+  }
+
   const cached = readCache()
   if (cached) {
     return cached
@@ -383,6 +393,13 @@ export const getDisastersNear = async (
   lng: number,
   km: number,
 ): Promise<DisasterEvent[]> => {
+  if (disasterOverride) {
+    return disasterOverride.filter(
+      (event) =>
+        haversineDistanceKm(lat, lng, event.lat, event.lng) <= km,
+    )
+  }
+
   const events = await getActiveDisasters()
   return events.filter(
     (event) =>

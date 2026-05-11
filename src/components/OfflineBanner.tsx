@@ -14,22 +14,40 @@ const formatLastSync = (lastOnlineAt: string | null) => {
   return `Last synced: ${parsed.toLocaleString()}`
 }
 
-const OfflineBanner = () => {
+type OfflineBannerProps = {
+  forceShow?: boolean
+  forcedPendingReports?: number
+  forcedLastOnlineAt?: string | null
+}
+
+const OfflineBanner = ({
+  forceShow = false,
+  forcedPendingReports,
+  forcedLastOnlineAt,
+}: OfflineBannerProps) => {
   const { isOnline, lastOnlineAt, pendingReports } = useOfflineStatus()
 
+  const resolvedOnline = forceShow ? false : isOnline
+  const resolvedLastOnline = forceShow
+    ? forcedLastOnlineAt ?? lastOnlineAt
+    : lastOnlineAt
+  const resolvedPendingReports = forceShow
+    ? forcedPendingReports ?? pendingReports
+    : pendingReports
+
   const lastSyncLabel = useMemo(
-    () => formatLastSync(lastOnlineAt),
-    [lastOnlineAt],
+    () => formatLastSync(resolvedLastOnline),
+    [resolvedLastOnline],
   )
 
-  if (isOnline) {
+  if (resolvedOnline) {
     return null
   }
 
   const reportLabel =
-    pendingReports === 1
+    resolvedPendingReports === 1
       ? '1 pending report'
-      : `${pendingReports} pending reports`
+      : `${resolvedPendingReports} pending reports`
 
   return (
     <div
