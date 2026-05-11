@@ -20,7 +20,7 @@ import type { LatLngExpression, Map as LeafletMap } from 'leaflet'
 import { DivIcon } from 'leaflet'
 import type { CommunityReport, DisasterEvent, RiskScore, Route } from '../types'
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
+const OVERPASS_URL = '/api/overpass/api/interpreter'
 const GRID_SIZE = 5
 const GRID_SPACING_KM = 1.2
 
