@@ -34,6 +34,9 @@ coverage/
 # Optional: Ignore public/offline-fallback.json if generated
 # public/offline-fallback.json
 
+# Exclude .github folder
+.github/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
