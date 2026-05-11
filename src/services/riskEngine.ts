@@ -6,7 +6,7 @@ import { getWeather } from './weatherService'
 const CACHE_TTL_MS = 15 * 60 * 1000
 const CACHE_PREFIX = 'risk:'
 const CACHE_PRECISION = 2
-const OPEN_ELEVATION_URL = 'https://api.open-elevation.com/api/v1/lookup'
+const OPEN_ELEVATION_URL = '/api/elevation/api/v1/lookup'
 
 type CacheEntry = {
   expiresAt: number
@@ -113,18 +113,30 @@ const toLevel = (score: number): RiskScore['level'] => {
 }
 
 const fetchElevation = async (lat: number, lng: number): Promise<number> => {
-  const response = await fetch(`${OPEN_ELEVATION_URL}?locations=${lat},${lng}`)
-  if (!response.ok) {
-    throw new Error('Open-Elevation request failed')
-  }
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-  const data = (await response.json()) as ElevationResponse
-  const elevation = data.results?.[0]?.elevation
-  if (typeof elevation !== 'number' || Number.isNaN(elevation)) {
-    throw new Error('Elevation data unavailable')
-  }
+    const response = await fetch(`${OPEN_ELEVATION_URL}?locations=${lat},${lng}`, {
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
 
-  return elevation
+    if (!response.ok) {
+      throw new Error('Open-Elevation request failed')
+    }
+
+    const data = (await response.json()) as ElevationResponse
+    const elevation = data.results?.[0]?.elevation
+    if (typeof elevation !== 'number' || Number.isNaN(elevation)) {
+      throw new Error('Elevation data unavailable')
+    }
+
+    return elevation
+  } catch (error) {
+    console.warn('Elevation fetch failed, falling back to 0m:', error)
+    return 0
+  }
 }
 
 const scoreWeather = (weather: WeatherData) => {

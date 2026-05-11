@@ -20,7 +20,7 @@ GuardNet launches as a community-first disaster intelligence network that turns 
 | --- | --- | --- |
 | Live Risk Dashboard | Fuses forecast, hazards, and alerts into a single risk meter | OpenWeather, Firebase |
 | Risk Map | Visualizes hotspots, safe zones, and evacuation routes | Mapbox, OpenRouteService |
-| AI Narration | Turns risk into concise, human language guidance | Anthropic |
+| AI Narration | Turns risk into concise, human language guidance | OpenRouter |
 | Community Reports | Collects verified incident reports with location context | Firebase |
 | Guardian Mode | Dispatches alerts to nearby volunteers and agencies | Firebase, OpenRouteService |
 | Offline-First PWA | Caches critical data when networks fail | Service Worker, Cache API |
@@ -61,7 +61,7 @@ GuardNet launches as a community-first disaster intelligence network that turns 
 - OpenRouteService for routing and evacuation paths
 
 **AI**
-- Anthropic for real-time narrative guidance
+- OpenRouter for real-time narrative guidance
 
 **Offline**
 - PWA Service Worker, Cache API, offline fallback
@@ -83,14 +83,14 @@ GuardNet launches as a community-first disaster intelligence network that turns 
    VITE_MAPBOX_TOKEN=your_mapbox_token
    VITE_FIREBASE_API_KEY=your_firebase_api_key
    VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
-   VITE_ANTHROPIC_KEY=your_anthropic_key
+   VITE_OPENROUTER_KEY=your_openrouter_key
    VITE_ORS_KEY=your_openrouteservice_key
    ```
    - `VITE_OPENWEATHER_KEY`: Forecasts and severe weather alerts
    - `VITE_MAPBOX_TOKEN`: Base maps, tiles, and geocoding
    - `VITE_FIREBASE_API_KEY`: Firebase client authentication
    - `VITE_FIREBASE_PROJECT_ID`: Firebase project routing and storage
-   - `VITE_ANTHROPIC_KEY`: AI narration and safety guidance
+   - `VITE_OPENROUTER_KEY`: AI narration and safety guidance
    - `VITE_ORS_KEY`: Evacuation routing and path scoring
 4. Run the app
    ```bash

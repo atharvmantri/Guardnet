@@ -18,6 +18,7 @@ import {
 } from 'react-leaflet'
 import type { LatLngExpression, Map as LeafletMap } from 'leaflet'
 import { DivIcon } from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import type { CommunityReport, DisasterEvent, RiskScore, Route } from '../types'
 
 const OVERPASS_URL = '/api/overpass/api/interpreter'

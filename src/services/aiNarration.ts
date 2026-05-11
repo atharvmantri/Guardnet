@@ -1,7 +1,7 @@
 import type { DisasterEvent, RiskScore, WeatherData } from '../types'
 
-const ANTHROPIC_URL = '/api/anthropic/v1/messages'
-const MODEL = 'claude-sonnet-4-20250514'
+const OPENROUTER_URL = '/api/openrouter/api/v1/chat/completions'
+const MODEL = 'inclusionai/ring-2.6-1t:free'
 const MAX_TOKENS = 120
 const CACHE_TTL_MS = 20 * 60 * 1000
 
@@ -104,25 +104,41 @@ const buildFallbackBriefing = (
   return `Risk is ${riskScore.level} in ${location} (${riskScore.score}/100) due to ${reason}. Move to a safer indoor spot and keep a phone and emergency alerts on right now.`
 }
 
+let lastRequestTime = 0
+const GLOBAL_COOLDOWN_MS = 20000 // 20s minimum between any AI calls
+
 export const generateRiskBriefing = async (
   riskScore: RiskScore,
   weatherData: WeatherData,
   nearbyDisasters: DisasterEvent[],
   locationName: string,
 ): Promise<string> => {
+  // 1. Connectivity check
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return buildFallbackBriefing(riskScore, locationName)
+  }
+
+  // 2. Cache check
   const cacheKey = toCacheKey(locationName, riskScore.level)
   const cached = briefingCache.get(cacheKey)
   if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
     return cached.text
   }
 
-  const apiKey = import.meta.env.VITE_ANTHROPIC_KEY
+  // 3. Cooldown check
+  const now = Date.now()
+  if (now - lastRequestTime < GLOBAL_COOLDOWN_MS) {
+    return cached?.text || buildFallbackBriefing(riskScore, locationName)
+  }
+
+  const apiKey = import.meta.env.VITE_OPENROUTER_KEY
   const fallback = buildFallbackBriefing(riskScore, locationName)
 
-  if (!apiKey) {
+  if (!apiKey || apiKey === 'YOUR_OPENROUTER_KEY') {
     return fallback
   }
 
+  lastRequestTime = now
   const message = buildUserMessage(
     riskScore,
     weatherData,
@@ -131,42 +147,46 @@ export const generateRiskBriefing = async (
   )
 
   try {
-    const response = await fetch(ANTHROPIC_URL, {
+    const response = await fetch(OPENROUTER_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
-        'anthropic-version': '2023-06-01',
+        'HTTP-Referer': 'https://guardnet.app',
+        'X-Title': 'GuardNet',
       },
       body: JSON.stringify({
         model: MODEL,
         max_tokens: MAX_TOKENS,
-        system: SYSTEM_PROMPT,
         messages: [
-          {
-            role: 'user',
-            content: message,
-          },
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: message },
         ],
       }),
     })
 
+    if (response.status === 429) {
+      console.warn('AI narration rate limited (429). Using fallback.')
+      return fallback
+    }
+
     if (!response.ok) {
-      throw new Error('Anthropic request failed')
+      throw new Error('OpenRouter request failed')
     }
 
     const data = (await response.json()) as {
-      content?: Array<{ text?: string }>
+      choices?: Array<{ message?: { content?: string } }>
     }
 
-    const text = data.content?.[0]?.text?.trim()
+    const text = data.choices?.[0]?.message?.content?.trim()
     if (!text) {
-      throw new Error('Anthropic response empty')
+      throw new Error('OpenRouter response empty')
     }
 
     briefingCache.set(cacheKey, { text, ts: Date.now() })
     return text
-  } catch {
+  } catch (error) {
+    console.error('AI narration error:', error)
     return fallback
   }
 }

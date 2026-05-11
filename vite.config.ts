@@ -6,10 +6,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   server: {
     proxy: {
-      '/api/anthropic': {
-        target: 'https://api.anthropic.com',
+      '/api/openrouter': {
+        target: 'https://openrouter.ai',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/anthropic/, ''),
+        rewrite: (path) => path.replace(/^\/api\/openrouter/, ''),
       },
       '/api/nominatim': {
         target: 'https://nominatim.openstreetmap.org',
@@ -24,6 +24,16 @@ export default defineConfig({
         target: 'https://overpass-api.de',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/overpass/, ''),
+      },
+      '/api/gdacs': {
+        target: 'https://www.gdacs.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/gdacs/, ''),
+      },
+      '/api/elevation': {
+        target: 'https://api.open-elevation.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/elevation/, ''),
       },
     },
   },

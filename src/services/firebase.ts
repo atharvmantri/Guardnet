@@ -48,9 +48,23 @@ export const firebaseApp = initializeApp(firebaseConfig)
 export const db = getFirestore(firebaseApp)
 export const auth = getAuth(firebaseApp)
 
+const AUTH_ERROR_KEY = 'gn:auth_config_error'
+let hasAuthConfigError = typeof localStorage !== 'undefined' && localStorage.getItem(AUTH_ERROR_KEY) === 'true'
+
 onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    signInAnonymously(auth).catch(() => {})
+  if (!user && !hasAuthConfigError) {
+    signInAnonymously(auth).catch((error) => {
+      // Only log the full error if it's not a config issue we've already seen
+      if (error.code === 'auth/configuration-not-found') {
+        hasAuthConfigError = true
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(AUTH_ERROR_KEY, 'true')
+        }
+        console.warn('Anonymous Authentication is not enabled in the Firebase Console. GuardNet will continue in restricted mode.')
+      } else {
+        console.error('Firebase Anonymous Auth Error:', error)
+      }
+    })
   }
 })
 

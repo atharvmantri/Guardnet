@@ -7,12 +7,13 @@ import {
   useState,
 } from 'react'
 import GuardianPanel from './components/GuardianPanel'
-import Map from './components/Map'
+import DisasterMap from './components/Map'
 import OfflineBanner from './components/OfflineBanner'
 import ReportFeed from './components/ReportFeed'
 import ReportModal from './components/ReportModal'
 import { useOfflineStatus } from './hooks/useOfflineStatus'
 // import { activateDemoMode } from './utils/demoMode'
+import LocationSearch from './components/LocationSearch'
 import { generateRiskBriefing } from './services/aiNarration'
 import { getDisastersNear } from './services/disasterService'
 import { calculateRisk } from './services/riskEngine'
@@ -58,6 +59,7 @@ const IconWind = makeIcon('💨')
 const LOCATION_REFRESH_MS = 10 * 60 * 1000
 const DISASTER_RADIUS_KM = 250
 const NOMINATIM_URL = '/api/nominatim/reverse'
+const locationCache = new Map<string, string>()
 
 const riskRingColors: Record<RiskScore['level'], string> = {
   low: '#22c55e',
@@ -124,7 +126,7 @@ const App = () => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [disasters, setDisasters] = useState<DisasterEvent[]>([])
   const [locationName, setLocationName] = useState('Locating...')
-  const [locationUpdatedAt, setLocationUpdatedAt] = useState(0)
+  const locationUpdatedAt = useRef(0)
   const [aiNarration, setAiNarration] = useState('')
   const [isReportOpen, setIsReportOpen] = useState(false)
   const [reportCoords, setReportCoords] = useState<Coords | null>(null)
@@ -141,6 +143,10 @@ const App = () => {
     'map',
   )
   const refreshTimer = useRef<number | null>(null)
+  const lastFetchedCoords = useRef<Coords | null>(null)
+  const lastFetchTime = useRef<number>(0)
+  const lastNarrationTime = useRef<number>(0)
+  const lastNarratedKey = useRef<string>('')
 
   const applyLocation = useCallback((next: Coords) => {
     setCoords(next)
@@ -149,6 +155,34 @@ const App = () => {
   }, [])
 
   const loadLocationName = useCallback(async (target: Coords) => {
+    const cacheKey = `${target.lat.toFixed(4)},${target.lng.toFixed(4)}`
+    if (locationCache.has(cacheKey)) {
+      setLocationName(locationCache.get(cacheKey)!)
+      locationUpdatedAt.current = Date.now()
+      return
+    }
+
+    // Throttle: avoid re-fetching if coordinates haven't changed much
+    // Increased threshold to 0.001 (approx 110m) to reduce jitter-induced calls
+    const now = Date.now()
+    const timeSinceLastFetch = now - lastFetchTime.current
+
+    if (
+      lastFetchedCoords.current &&
+      Math.abs(lastFetchedCoords.current.lat - target.lat) < 0.001 &&
+      Math.abs(lastFetchedCoords.current.lng - target.lng) < 0.001 &&
+      timeSinceLastFetch < 30000 // If it's the same area, wait at least 30s
+    ) {
+      return
+    }
+
+    // Absolute minimum throttle: 2 seconds regardless of distance
+    if (timeSinceLastFetch < 2000) {
+      return
+    }
+
+    lastFetchTime.current = now
+
     try {
       const email = import.meta.env.VITE_NOMINATIM_EMAIL as string | undefined
       const params = new URLSearchParams({
@@ -159,9 +193,7 @@ const App = () => {
       if (email) {
         params.set('email', email)
       }
-      const response = await fetch(
-        `${NOMINATIM_URL}?${params.toString()}`,
-      )
+      const response = await fetch(`${NOMINATIM_URL}?${params.toString()}`)
       if (!response.ok) {
         throw new Error('Location lookup failed')
       }
@@ -169,11 +201,14 @@ const App = () => {
         display_name?: string
         address?: Record<string, string>
       }
-      setLocationName(formatLocationName(payload))
-      setLocationUpdatedAt(Date.now())
+      const name = formatLocationName(payload)
+      setLocationName(name)
+      locationCache.set(cacheKey, name)
+      lastFetchedCoords.current = target
+      locationUpdatedAt.current = Date.now()
     } catch {
       setLocationName(formatCoordsLabel(target))
-      setLocationUpdatedAt(Date.now())
+      locationUpdatedAt.current = Date.now()
     }
   }, [])
 
@@ -302,7 +337,7 @@ const App = () => {
       loadWeather()
       loadDisasters()
       const now = Date.now()
-      if (now - locationUpdatedAt > LOCATION_REFRESH_MS) {
+      if (now - locationUpdatedAt.current > LOCATION_REFRESH_MS) {
         loadLocationName(coords)
       }
     }, 60000)
@@ -318,15 +353,26 @@ const App = () => {
     loadLocationName,
     loadRisk,
     loadWeather,
-    locationUpdatedAt,
   ])
 
   useEffect(() => {
-    if (!riskScore || !weatherData) {
+    if (!riskScore || !weatherData || !isOnline) {
+      return
+    }
+
+    const currentKey = `${locationName}-${riskScore.level}-${disasters.length}`
+    if (currentKey === lastNarratedKey.current) {
+      return
+    }
+
+    const now = Date.now()
+    if (now - lastNarrationTime.current < 45000) {
       return
     }
 
     const getNarration = async () => {
+      lastNarrationTime.current = Date.now()
+      lastNarratedKey.current = currentKey
       const text = await generateRiskBriefing(
         riskScore,
         weatherData,
@@ -337,7 +383,7 @@ const App = () => {
     }
 
     getNarration()
-  }, [disasters, locationName, riskScore, weatherData])
+  }, [disasters.length, locationName, riskScore, weatherData, isOnline])
 
   const ringStyle = useMemo(() => {
     const level = riskScore?.level ?? 'low'
@@ -465,34 +511,19 @@ const App = () => {
             <p className="text-[11px] text-white/60">Field command</p>
           </div>
         </div>
+        <div className="flex flex-1 items-center justify-center px-4">
+          <LocationSearch onSelect={(lat, lng, name) => {
+            applyLocation({ lat, lng })
+            setLocationName(name.split(',')[0])
+          }} />
+        </div>
+
         <div className="flex items-center gap-3">
-          <label className="hidden items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-white/70 sm:flex">
-            <IconSearch size={14} />
-            <input
-              value={searchValue}
-              onChange={(event) => {
-                const next = event.target.value
-                setSearchValue(next)
-                if (next.trim().toLowerCase() === 'demo') {
-                  setDemoActive(true)
-                }
-              }}
-              placeholder="Search"
-              className="w-28 bg-transparent text-xs text-white placeholder:text-white/50 focus:outline-none"
-            />
-          </label>
           {locationBadge}
-          <button
-            type="button"
-            className="rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white/80 transition hover:bg-white/10"
-            onClick={handleManualLocation}
-          >
-            Set location
-          </button>
           {onlineBadge}
           <button
             type="button"
-            className="rounded-full border border-white/15 p-2 text-white/80 transition hover:bg-white/10"
+            className="hidden rounded-full border border-white/15 p-2 text-white/80 transition hover:bg-white/10 sm:flex"
             aria-label="Notifications"
           >
             <IconBell size={18} />
@@ -502,11 +533,11 @@ const App = () => {
 
       <main className="pt-[52px]">
         <div
-          className={`hidden h-[calc(100vh-52px)] gap-4 px-4 py-4 md:flex ${
+          className={`h-[calc(100vh-52px)] w-full overflow-hidden gap-4 px-4 py-4 md:flex ${
             demoActive ? 'pt-10' : ''
           }`}
         >
-          <aside className="flex w-[300px] flex-col gap-4">
+          <aside className="hidden w-[320px] flex-col gap-4 overflow-y-auto pr-1 md:flex shrink-0">
             <section className={sideCardClass} id="risk-card">
               <div className="flex items-center justify-between">
                 <div>
@@ -643,7 +674,7 @@ const App = () => {
                 </div>
               </div>
               <div className="h-full overflow-hidden">
-                <Map
+                <DisasterMap
                   className="h-full w-full"
                   onMapLongPress={handleMapLongPress}
                   userLocationOverride={coords}
@@ -702,7 +733,7 @@ const App = () => {
           >
             {mobileTab === 'map' && (
               <div className="h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <Map
+                <DisasterMap
                   className="h-full w-full"
                   onMapLongPress={handleMapLongPress}
                   userLocationOverride={coords}

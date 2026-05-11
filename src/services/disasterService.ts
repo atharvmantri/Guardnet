@@ -308,11 +308,18 @@ const fetchNasa = async (): Promise<DisasterEvent[]> => {
 }
 
 const fetchGdacs = async (): Promise<DisasterEvent[]> => {
-  const response = await fetch('https://www.gdacs.org/xml/rss.xml')
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
 
-  if (!response.ok) {
-    throw new Error('GDACS request failed')
-  }
+    const response = await fetch('/api/gdacs/xml/rss.xml', {
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      throw new Error('GDACS request failed')
+    }
 
   const xmlText = await response.text()
   if (typeof DOMParser === 'undefined') {
@@ -360,6 +367,10 @@ const fetchGdacs = async (): Promise<DisasterEvent[]> => {
       } satisfies DisasterEvent
     })
     .filter(Boolean) as DisasterEvent[]
+  } catch (error) {
+    console.warn('GDACS fetch failed:', error)
+    return []
+  }
 }
 
 const loadDisasters = async (): Promise<DisasterEvent[]> => {
