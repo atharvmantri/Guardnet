@@ -34,8 +34,10 @@ coverage/
 # Optional: Ignore public/offline-fallback.json if generated
 # public/offline-fallback.json
 
-# Exclude .github folder
-.github/
+# Exclude .github folder except workflows
+.github/*
+!.github/workflows/
+!.github/workflows/**
 
 # Editor directories and files
 .vscode/*
