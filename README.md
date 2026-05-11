@@ -97,6 +97,20 @@ GuardNet launches as a community-first disaster intelligence network that turns 
    npm run dev
    ```
 
+## Deploy Live on GitHub Pages
+
+1. Add these repository secrets in **GitHub → Settings → Secrets and variables → Actions**:
+   - `VITE_OPENWEATHER_KEY`
+   - `VITE_MAPBOX_TOKEN`
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_ANTHROPIC_KEY`
+   - `VITE_ORS_KEY`
+2. Push to the `main` branch (or run the workflow manually from **Actions**).
+3. In **Settings → Pages**, set **Source** to **GitHub Actions**.
+4. After the workflow succeeds, your live site will be available at:
+   - `https://atharvmantri.github.io/Guardnet/`
+
 ## Free APIs Used
 
 | API | Purpose | Key needed? |
