@@ -143,9 +143,8 @@ const fetchNearbyByGeohash = async <T extends { lat: number; lng: number }>(
 const findNearestVolunteer = (
   volunteers: Array<{ id: string; data: VolunteerRecord }>,
   center: [number, number],
-) => {
-  let nearest: { id: string; data: VolunteerRecord; distanceKm: number } | null =
-    null
+): { id: string; data: VolunteerRecord; distanceKm: number } | null => {
+  let nearest: { id: string; data: VolunteerRecord; distanceKm: number } | null = null
 
   volunteers.forEach((volunteer) => {
     const distanceKm = distanceBetween(
@@ -277,7 +276,7 @@ export async function triggerGuardianAlert(
   event: DisasterEvent,
 ): Promise<GuardianAlertResult> {
   try {
-    const guardians = await fetchNearbyByGeohash<StoredGuardian>(
+    const guardians: Array<{ id: string; data: StoredGuardian }> = await fetchNearbyByGeohash<StoredGuardian>(
       'guardians',
       [event.lat, event.lng],
       event.radius,
@@ -289,7 +288,7 @@ export async function triggerGuardianAlert(
 
     for (const guardian of guardians) {
       try {
-        const volunteers = await fetchNearbyByGeohash<VolunteerRecord>(
+        const volunteers: Array<{ id: string; data: VolunteerRecord }> = await fetchNearbyByGeohash<VolunteerRecord>(
           'volunteers',
           [guardian.data.lat, guardian.data.lng],
           VOLUNTEER_RADIUS_KM,
@@ -301,40 +300,41 @@ export async function triggerGuardianAlert(
           guardian.data.lng,
         ])
 
-        if (!nearest) {
+        if (nearest) {
+          const n = nearest as { id: string; data: VolunteerRecord; distanceKm: number }
+          volunteersMatched += 1
+
+          const guardianId = guardian.data.userId || guardian.id
+          const assignment = buildAssignment(
+            n.data.userId,
+            guardianId,
+            event.id,
+          )
+
+          const assignmentRef = await addDoc(
+            collection(db, 'assignments'),
+            assignment,
+          )
+
+          assignmentsCreated += 1
+
+          await updateDoc(doc(db, 'volunteers', n.id), {
+            status: 'assigned',
+            updatedAt: new Date().toISOString(),
+          })
+
+          const notification = buildNotification(
+            guardian.data,
+            guardianId,
+            n.data.userId,
+            assignmentRef.id,
+            event,
+          )
+
+          await setDoc(doc(db, 'notifications', n.data.userId), notification)
+        } else {
           continue
         }
-
-        volunteersMatched += 1
-
-        const guardianId = guardian.data.userId || guardian.id
-        const assignment = buildAssignment(
-          nearest.data.userId,
-          guardianId,
-          event.id,
-        )
-
-        const assignmentRef = await addDoc(
-          collection(db, 'assignments'),
-          assignment,
-        )
-
-        assignmentsCreated += 1
-
-        await updateDoc(doc(db, 'volunteers', nearest.id), {
-          status: 'assigned',
-          updatedAt: new Date().toISOString(),
-        })
-
-        const notification = buildNotification(
-          guardian.data,
-          guardianId,
-          nearest.data.userId,
-          assignmentRef.id,
-          event,
-        )
-
-        await setDoc(doc(db, 'notifications', nearest.data.userId), notification)
       } catch (error) {
         errors.push(
           `Guardian ${guardian.id}: ${toErrorMessage(

@@ -12,6 +12,28 @@ dist
 dist-ssr
 *.local
 
+# Build outputs
+build/
+
+# OS files
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+
+# Coverage reports
+coverage/
+
+# Misc
+*.tmp
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional: Ignore public/offline-fallback.json if generated
+# public/offline-fallback.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

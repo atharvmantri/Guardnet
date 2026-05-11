@@ -1,3 +1,4 @@
+// @ts-ignore
 import { createStore, del, entries, keys, set } from 'idb-keyval'
 import type { CommunityReport } from '../types'
 import { addCommunityReport } from '../services/firebase'

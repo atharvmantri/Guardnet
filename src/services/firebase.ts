@@ -88,8 +88,9 @@ export async function getCommunityReports(
   const radiusInM = radiusKm * 1000
   const bounds = geohashQueryBounds(center, radiusInM)
 
+
   const snapshots = await Promise.all(
-    bounds.map((bound) =>
+    bounds.map((bound: [string, string]) =>
       getDocs(
         query(
           collection(db, 'communityReports'),
@@ -103,8 +104,8 @@ export async function getCommunityReports(
 
   const matching: CommunityReport[] = []
 
-  snapshots.forEach((snapshot) => {
-    snapshot.docs.forEach((docSnap) => {
+  snapshots.forEach((snapshot: any) => {
+    snapshot.docs.forEach((docSnap: any) => {
       const data = docSnap.data() as Omit<CommunityReport, 'id'>
       const distance = distanceBetween([data.lat, data.lng], center)
       if (distance <= radiusKm) {

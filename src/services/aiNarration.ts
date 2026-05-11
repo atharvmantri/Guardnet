@@ -96,7 +96,6 @@ const buildUserMessage = (
 
 const buildFallbackBriefing = (
   riskScore: RiskScore,
-  weatherData: WeatherData,
   locationName: string,
 ) => {
   const location = locationName.trim() || 'your area'
@@ -118,7 +117,7 @@ export const generateRiskBriefing = async (
   }
 
   const apiKey = import.meta.env.VITE_ANTHROPIC_KEY
-  const fallback = buildFallbackBriefing(riskScore, weatherData, locationName)
+  const fallback = buildFallbackBriefing(riskScore, locationName)
 
   if (!apiKey) {
     return fallback

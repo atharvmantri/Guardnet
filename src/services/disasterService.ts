@@ -324,8 +324,10 @@ const fetchGdacs = async (): Promise<DisasterEvent[]> => {
 
   return items
     .map((item) => {
-      const alertLevel = item.querySelector('gdacs\\:alertlevel')?.textContent
-      const eventType = item.querySelector('gdacs\\:eventtype')?.textContent
+      const alertLevelRaw = item.querySelector('gdacs\\:alertlevel')?.textContent
+      const alertLevel: string | null = alertLevelRaw !== undefined ? alertLevelRaw : null;
+      const eventTypeRaw = item.querySelector('gdacs\\:eventtype')?.textContent
+      const eventType: string | null = eventTypeRaw !== undefined ? eventTypeRaw : null;
       const type = toTypeFromGdacs(eventType)
       if (!type) {
         return null

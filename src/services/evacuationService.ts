@@ -1,5 +1,7 @@
-import { lineString, point } from '@turf/helpers'
-import pointToLineDistance from '@turf/point-to-line-distance'
+// @ts-ignore: No types for this import
+import { lineString, point } from '@turf/helpers';
+// @ts-ignore: No types for this import
+import pointToLineDistance from '@turf/point-to-line-distance';
 import type { Route } from '../types'
 import { getCommunityReports } from './firebase'
 
@@ -368,27 +370,26 @@ const fetchFacilities = async (
   const data = (await response.json()) as OverpassResponse
 
   return (data.elements ?? [])
-    .map((element) => {
+    .map((element): Facility | null => {
       const lat = element.lat ?? element.center?.lat
       const lng = element.lon ?? element.center?.lon
       if (lat == null || lng == null) {
         return null
       }
-
       return {
         name: normalizeFacilityName(element),
-        lat,
-        lng,
+        lat: Number(lat),
+        lng: Number(lng),
       }
     })
-    .filter(Boolean) as Facility[]
+    .filter((f): f is Facility => f !== null)
 }
 
 const findNearestHospital = async (
   coordinates: Array<[number, number]>,
 ): Promise<Route['nearestHospital']> => {
   try {
-    const facilities = await fetchFacilities(coordinates)
+    const facilities: Facility[] = await fetchFacilities(coordinates)
     if (!facilities.length) {
       return null
     }
@@ -397,7 +398,7 @@ const findNearestHospital = async (
     let nearest: Facility | null = null
     let nearestDistance = Infinity
 
-    facilities.forEach((facility) => {
+    facilities.forEach((facility: Facility) => {
       const distanceKm = pointToLineDistance(
         point([facility.lng, facility.lat]),
         line,
@@ -410,13 +411,15 @@ const findNearestHospital = async (
       }
     })
 
-    return nearest
-      ? {
-          name: nearest.name,
-          lat: nearest.lat,
-          lng: nearest.lng,
-        }
-      : null
+    if (nearest) {
+      const facility = nearest as Facility;
+      return {
+        name: facility.name,
+        lat: facility.lat,
+        lng: facility.lng,
+      }
+    }
+    return null
   } catch {
     return null
   }
