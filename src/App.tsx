@@ -212,28 +212,7 @@ const App = () => {
     }
   }, [])
 
-  const handleManualLocation = useCallback(() => {
-    const input = window.prompt('Enter latitude, longitude (e.g. 22.6836, 75.8351)')
-    if (!input) {
-      return
-    }
 
-    const [latRaw, lngRaw] = input.split(',').map((part) => part.trim())
-    const lat = Number(latRaw)
-    const lng = Number(lngRaw)
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      window.alert('Invalid coordinates. Use "lat, lng" format.')
-      return
-    }
-
-    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-      window.alert('Coordinates out of range. Latitude is -90..90, longitude is -180..180.')
-      return
-    }
-
-    applyLocation({ lat, lng })
-  }, [applyLocation])
 
   const handleMapLongPress = useCallback(
     (lat: number, lng: number) => {
