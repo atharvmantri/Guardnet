@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Search, MapPin, Loader2 } from 'lucide-react'
+import { IconSearch, IconMapPin, IconLoader2 } from '@tabler/icons-react'
 
 type SearchResult = {
   display_name: string
@@ -82,7 +82,7 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
     <div ref={containerRef} className="relative flex-1 max-w-md">
       <div className="relative flex items-center">
         <div className="absolute left-3 text-slate-400">
-          {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+          {loading ? <IconLoader2 size={16} className="animate-spin" /> : <IconSearch size={16} />}
         </div>
         <input
           type="text"
@@ -108,7 +108,7 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
                   }}
                   className="w-full flex items-start gap-3 px-4 py-2.5 text-left hover:bg-white/10 transition-colors group"
                 >
-                  <MapPin size={16} className="mt-0.5 text-slate-500 group-hover:text-blue-400 shrink-0" />
+                  <IconMapPin size={16} className="mt-0.5 text-slate-500 group-hover:text-blue-400 shrink-0" />
                   <span className="text-xs text-slate-200 line-clamp-2">{res.display_name}</span>
                 </button>
               </li>
