@@ -355,23 +355,38 @@ const Map = forwardRef<MapHandle, MapProps>(
       hasCenteredRef.current = false
     }, [userLocationOverride?.lat, userLocationOverride?.lng])
 
+    const lastFacilityFetchCoords = useRef<{ lat: number; lng: number } | null>(null)
+
     useEffect(() => {
       if (!resolvedLocation || facilities) {
         return
       }
 
+      const last = lastFacilityFetchCoords.current
+      if (
+        last &&
+        haversineDistanceKm(
+          last.lat,
+          last.lng,
+          resolvedLocation.lat,
+          resolvedLocation.lng
+        ) < 1
+      ) {
+        return
+      }
+
       let active = true
+      lastFacilityFetchCoords.current = { lat: resolvedLocation.lat, lng: resolvedLocation.lng }
 
       fetchFacilities(resolvedLocation.lat, resolvedLocation.lng)
         .then((data) => {
-          if (active) {
+          if (active && data.length > 0) {
             setFacilityMarkers(data)
           }
         })
-        .catch(() => {
-          if (active) {
-            setFacilityMarkers([])
-          }
+        .catch((error) => {
+          console.error('Failed to fetch facilities:', error)
+          // Keep existing markers on error
         })
 
       return () => {
@@ -453,7 +468,9 @@ const Map = forwardRef<MapHandle, MapProps>(
                   fillOpacity: 1,
                   className: 'user-pulse',
                 }}
-              />
+              >
+                <Popup>Your current location</Popup>
+              </CircleMarker>
             </>
           ) : null}
 
