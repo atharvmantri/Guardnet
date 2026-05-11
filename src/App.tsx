@@ -113,6 +113,9 @@ const formatLocationName = (payload: {
   )
 }
 
+const formatCoordsLabel = (coords: Coords) =>
+  `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
+
 const App = () => {
   const { isOnline } = useOfflineStatus()
   const [coords, setCoords] = useState<Coords | null>(null)
@@ -139,13 +142,23 @@ const App = () => {
   )
   const refreshTimer = useRef<number | null>(null)
 
+  const applyLocation = useCallback((next: Coords) => {
+    setCoords(next)
+    setReportCoords(next)
+    setLocationName('Locating...')
+  }, [])
+
   const loadLocationName = useCallback(async (target: Coords) => {
     try {
+      const email = import.meta.env.VITE_NOMINATIM_EMAIL as string | undefined
       const params = new URLSearchParams({
         format: 'jsonv2',
         lat: String(target.lat),
         lon: String(target.lng),
       })
+      if (email) {
+        params.set('email', email)
+      }
       const response = await fetch(
         `${NOMINATIM_URL}?${params.toString()}`,
       )
@@ -159,9 +172,40 @@ const App = () => {
       setLocationName(formatLocationName(payload))
       setLocationUpdatedAt(Date.now())
     } catch {
-      setLocationName('Unknown location')
+      setLocationName(formatCoordsLabel(target))
+      setLocationUpdatedAt(Date.now())
     }
   }, [])
+
+  const handleManualLocation = useCallback(() => {
+    const input = window.prompt('Enter latitude, longitude (e.g. 22.6836, 75.8351)')
+    if (!input) {
+      return
+    }
+
+    const [latRaw, lngRaw] = input.split(',').map((part) => part.trim())
+    const lat = Number(latRaw)
+    const lng = Number(lngRaw)
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      window.alert('Invalid coordinates. Use "lat, lng" format.')
+      return
+    }
+
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      window.alert('Coordinates out of range. Latitude is -90..90, longitude is -180..180.')
+      return
+    }
+
+    applyLocation({ lat, lng })
+  }, [applyLocation])
+
+  const handleMapLongPress = useCallback(
+    (lat: number, lng: number) => {
+      applyLocation({ lat, lng })
+    },
+    [applyLocation],
+  )
 
   const loadRisk = useCallback(async () => {
     if (!coords) {
@@ -438,6 +482,13 @@ const App = () => {
             />
           </label>
           {locationBadge}
+          <button
+            type="button"
+            className="rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white/80 transition hover:bg-white/10"
+            onClick={handleManualLocation}
+          >
+            Set location
+          </button>
           {onlineBadge}
           <button
             type="button"
@@ -592,7 +643,11 @@ const App = () => {
                 </div>
               </div>
               <div className="h-full overflow-hidden">
-                <Map className="h-full w-full" />
+                <Map
+                  className="h-full w-full"
+                  onMapLongPress={handleMapLongPress}
+                  userLocationOverride={coords}
+                />
               </div>
             </div>
           </section>
@@ -647,7 +702,11 @@ const App = () => {
           >
             {mobileTab === 'map' && (
               <div className="h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <Map className="h-full w-full" />
+                <Map
+                  className="h-full w-full"
+                  onMapLongPress={handleMapLongPress}
+                  userLocationOverride={coords}
+                />
               </div>
             )}
             {mobileTab === 'risk' && (

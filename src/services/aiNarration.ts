@@ -1,6 +1,6 @@
 import type { DisasterEvent, RiskScore, WeatherData } from '../types'
 
-const ANTHROPIC_URL = '/api/anthropic/messages'
+const ANTHROPIC_URL = '/api/anthropic/v1/messages'
 const MODEL = 'claude-sonnet-4-20250514'
 const MAX_TOKENS = 120
 const CACHE_TTL_MS = 20 * 60 * 1000

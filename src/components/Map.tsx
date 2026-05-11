@@ -44,6 +44,7 @@ type MapProps = {
   riskCache?: Record<string, RiskScore>
   riskLookup?: RiskLookup
   onMapLongPress?: (lat: number, lng: number) => void
+  userLocationOverride?: { lat: number; lng: number } | null
   className?: string
 }
 
@@ -293,6 +294,7 @@ const Map = forwardRef<MapHandle, MapProps>(
       riskCache,
       riskLookup,
       onMapLongPress,
+      userLocationOverride,
       className,
     },
     ref,
@@ -301,6 +303,17 @@ const Map = forwardRef<MapHandle, MapProps>(
     const [facilityMarkers, setFacilityMarkers] = useState<Facility[]>([])
     const mapRef = useRef<LeafletMap | null>(null)
     const hasCenteredRef = useRef(false)
+
+    const resolvedLocation = useMemo<LocationState | null>(() => {
+      if (userLocationOverride) {
+        return {
+          lat: userLocationOverride.lat,
+          lng: userLocationOverride.lng,
+          accuracy: 0,
+        }
+      }
+      return userLocation
+    }, [userLocation, userLocationOverride])
 
     useImperativeHandle(ref, () => ({
       flyTo: (lat, lng, zoom = 14) => {
@@ -329,22 +342,26 @@ const Map = forwardRef<MapHandle, MapProps>(
     }, [])
 
     useEffect(() => {
-      if (!userLocation || !mapRef.current || hasCenteredRef.current) {
+      if (!resolvedLocation || !mapRef.current || hasCenteredRef.current) {
         return
       }
 
-      mapRef.current.flyTo([userLocation.lat, userLocation.lng], 13)
+      mapRef.current.flyTo([resolvedLocation.lat, resolvedLocation.lng], 13)
       hasCenteredRef.current = true
-    }, [userLocation])
+    }, [resolvedLocation])
 
     useEffect(() => {
-      if (!userLocation || facilities) {
+      hasCenteredRef.current = false
+    }, [userLocationOverride?.lat, userLocationOverride?.lng])
+
+    useEffect(() => {
+      if (!resolvedLocation || facilities) {
         return
       }
 
       let active = true
 
-      fetchFacilities(userLocation.lat, userLocation.lng)
+      fetchFacilities(resolvedLocation.lat, resolvedLocation.lng)
         .then((data) => {
           if (active) {
             setFacilityMarkers(data)
@@ -359,26 +376,26 @@ const Map = forwardRef<MapHandle, MapProps>(
       return () => {
         active = false
       }
-    }, [facilities, userLocation])
+    }, [facilities, resolvedLocation])
 
     const facilityList = facilities ?? facilityMarkers
 
     const riskGrid = useMemo(() => {
-      if (!userLocation) {
+      if (!resolvedLocation) {
         return [] as Array<{ lat: number; lng: number; level: RiskScore['level'] }>
       }
 
       const grid: Array<{ lat: number; lng: number; level: RiskScore['level'] }> = []
       const half = Math.floor(GRID_SIZE / 2)
       const { latOffset, lngOffset } = toGridOffset(
-        userLocation.lat,
+        resolvedLocation.lat,
         GRID_SPACING_KM,
       )
 
       for (let row = -half; row <= half; row += 1) {
         for (let col = -half; col <= half; col += 1) {
-          const lat = userLocation.lat + row * latOffset
-          const lng = userLocation.lng + col * lngOffset
+          const lat = resolvedLocation.lat + row * latOffset
+          const lng = resolvedLocation.lng + col * lngOffset
           const lookup = riskLookup?.(lat, lng) ?? getRiskFromCache(lat, lng, riskCache)
 
           if (!lookup) {
@@ -390,10 +407,10 @@ const Map = forwardRef<MapHandle, MapProps>(
       }
 
       return grid
-    }, [riskCache, riskLookup, userLocation])
+    }, [riskCache, riskLookup, resolvedLocation])
 
-    const baseCenter: LatLngExpression = userLocation
-      ? [userLocation.lat, userLocation.lng]
+    const baseCenter: LatLngExpression = resolvedLocation
+      ? [resolvedLocation.lat, resolvedLocation.lng]
       : [0, 0]
 
     return (
@@ -413,11 +430,11 @@ const Map = forwardRef<MapHandle, MapProps>(
 
           <MapLongPressHandler onLongPress={onMapLongPress} />
 
-          {userLocation ? (
+          {resolvedLocation ? (
             <>
               <Circle
-                center={[userLocation.lat, userLocation.lng]}
-                radius={userLocation.accuracy}
+                center={[resolvedLocation.lat, resolvedLocation.lng]}
+                radius={resolvedLocation.accuracy}
                 pathOptions={{
                   color: '#60a5fa',
                   weight: 1,
@@ -426,7 +443,7 @@ const Map = forwardRef<MapHandle, MapProps>(
                 }}
               />
               <CircleMarker
-                center={[userLocation.lat, userLocation.lng]}
+                center={[resolvedLocation.lat, resolvedLocation.lng]}
                 radius={8}
                 pathOptions={{
                   color: '#2563eb',
@@ -458,10 +475,10 @@ const Map = forwardRef<MapHandle, MapProps>(
               event.severity,
               typeIcons[event.type] ?? 'D',
             )
-            const distance = userLocation
+            const distance = resolvedLocation
               ? haversineDistanceKm(
-                  userLocation.lat,
-                  userLocation.lng,
+                  resolvedLocation.lat,
+                  resolvedLocation.lng,
                   event.lat,
                   event.lng,
                 )

@@ -2,6 +2,11 @@
   position: fixed;
   inset: 0;
   z-index: 40;
+  pointer-events: none;
+}
+
+.report-modal-root[aria-hidden='false'] {
+  pointer-events: auto;
 }
 
 .report-modal-overlay {
@@ -10,6 +15,7 @@
   background: rgba(15, 23, 42, 0.4);
   opacity: 0;
   transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .report-modal-overlay.is-open {

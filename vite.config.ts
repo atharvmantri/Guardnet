@@ -15,6 +15,10 @@ export default defineConfig({
         target: 'https://nominatim.openstreetmap.org',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/nominatim/, ''),
+        headers: {
+          'User-Agent': 'GuardNet Dev (local)',
+          'Accept-Language': 'en',
+        },
       },
       '/api/overpass': {
         target: 'https://overpass-api.de',
