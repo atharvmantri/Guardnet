@@ -1,11 +1,15 @@
 .report-modal-root {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 9999;
   pointer-events: none;
 }
 
-.report-modal-root[aria-hidden='false'] {
+.report-modal-root[aria-hidden='true'] {
+  pointer-events: none;
+}
+
+.report-modal-root:not([aria-hidden='true']) {
   pointer-events: auto;
 }
 

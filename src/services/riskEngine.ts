@@ -6,7 +6,6 @@ import { getWeather } from './weatherService'
 const CACHE_TTL_MS = 15 * 60 * 1000
 const CACHE_PREFIX = 'risk:'
 const CACHE_PRECISION = 2
-const OPEN_ELEVATION_URL = '/api/elevation/api/v1/lookup'
 
 type CacheEntry = {
   expiresAt: number
@@ -19,13 +18,7 @@ type FactorEntry = {
 }
 
 type ElevationResponse = {
-  results?: Array<{
-    elevation?: number
-    location?: {
-      lat?: number
-      lng?: number
-    }
-  }>
+  elevation?: number[]
 }
 
 const roundCoord = (value: number) =>
@@ -117,24 +110,23 @@ const fetchElevation = async (lat: number, lng: number): Promise<number> => {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-    const response = await fetch(`${OPEN_ELEVATION_URL}?locations=${lat},${lng}`, {
+    const response = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`, {
       signal: controller.signal,
     })
     clearTimeout(timeoutId)
 
     if (!response.ok) {
-      throw new Error('Open-Elevation request failed')
+      throw new Error('Elevation request failed')
     }
 
     const data = (await response.json()) as ElevationResponse
-    const elevation = data.results?.[0]?.elevation
+    const elevation = data.elevation?.[0]
     if (typeof elevation !== 'number' || Number.isNaN(elevation)) {
       throw new Error('Elevation data unavailable')
     }
 
     return elevation
-  } catch (error) {
-    console.warn('Elevation fetch failed, falling back to 0m:', error)
+  } catch {
     return 0
   }
 }

@@ -1,7 +1,7 @@
 import type { DisasterEvent, RiskScore, WeatherData } from '../types'
 
 const OPENROUTER_URL = '/api/openrouter/api/v1/chat/completions'
-const MODEL = 'inclusionai/ring-2.6-1t:free'
+const MODEL = 'cognitivecomputations/dolphin3.0-r1-mistral-24b:free'
 const MAX_TOKENS = 120
 const CACHE_TTL_MS = 20 * 60 * 1000
 
@@ -98,10 +98,17 @@ const buildFallbackBriefing = (
   riskScore: RiskScore,
   locationName: string,
 ) => {
-  const location = locationName.trim() || 'your area'
+  let location = locationName.trim()
+  if (!location || location === 'Locating..') {
+    location = 'your area'
+  }
   const reason = riskScore.factors[0] || 'current conditions'
 
-  return `Risk is ${riskScore.level} in ${location} (${riskScore.score}/100) due to ${reason}. Move to a safer indoor spot and keep a phone and emergency alerts on right now.`
+  if (riskScore.level === 'low') {
+    return `Safety risk is currently low in ${location} (${riskScore.score}/100). No immediate hazards detected; stay weather-aware.`
+  }
+
+  return `Risk level is ${riskScore.level} in ${location} (${riskScore.score}/100) due to ${reason}. It is advised to stay indoors and keep emergency alerts active.`
 }
 
 let lastRequestTime = 0
@@ -166,7 +173,6 @@ export const generateRiskBriefing = async (
     })
 
     if (response.status === 429) {
-      console.warn('AI narration rate limited (429). Using fallback.')
       return fallback
     }
 
@@ -180,7 +186,7 @@ export const generateRiskBriefing = async (
 
     const text = data.choices?.[0]?.message?.content?.trim()
     if (!text) {
-      throw new Error('OpenRouter response empty')
+      return fallback
     }
 
     briefingCache.set(cacheKey, { text, ts: Date.now() })

@@ -12,7 +12,7 @@ import OfflineBanner from './components/OfflineBanner'
 import ReportFeed from './components/ReportFeed'
 import ReportModal from './components/ReportModal'
 import { useOfflineStatus } from './hooks/useOfflineStatus'
-// import { activateDemoMode } from './utils/demoMode'
+import { activateDemoMode } from './utils/demoMode'
 import LocationSearch from './components/LocationSearch'
 import { generateRiskBriefing } from './services/aiNarration'
 import { getDisastersNear } from './services/disasterService'
@@ -147,10 +147,12 @@ const App = () => {
   const lastFetchTime = useRef<number>(0)
   const lastNarrationTime = useRef<number>(0)
   const lastNarratedKey = useRef<string>('')
+  const reportCoordsRef = useRef<Coords | null>(null)
 
   const applyLocation = useCallback((next: Coords) => {
     setCoords(next)
     setReportCoords(next)
+    reportCoordsRef.current = next
     setLocationName('Locating...')
   }, [])
 
@@ -264,21 +266,26 @@ const App = () => {
     }
   }, [coords])
 
-
-  // Define activateDemoMode to fix the error
-  const activateDemoMode = useCallback(() => {
-    // TODO: Implement demo mode activation logic
-    // For now, just log or set some demo state if needed
-    console.log('Demo mode activated');
-  }, []);
-
   useEffect(() => {
     if (demoActive) {
       activateDemoMode()
+      if (!coords) {
+        const mumbai = { lat: 19.076, lng: 72.8777 }
+        setCoords(mumbai)
+        setReportCoords(mumbai)
+        reportCoordsRef.current = mumbai
+      }
     }
   }, [demoActive])
 
   useEffect(() => {
+    const handleOpenReport = () => {
+      if (reportCoordsRef.current) {
+        setIsReportOpen(true)
+      }
+    }
+    window.addEventListener('gn-open-report', handleOpenReport)
+
     if (!navigator.geolocation) {
       return
     }
@@ -290,12 +297,23 @@ const App = () => {
         }
         setCoords(next)
         setReportCoords(next)
+        reportCoordsRef.current = next
       },
       () => {
-        setCoords(null)
+        const isDemo = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('guardnet_demo') === 'true'
+        if (!isDemo) {
+          const mumbai = { lat: 19.076, lng: 72.8777 }
+          setCoords(mumbai)
+          setReportCoords(mumbai)
+          reportCoordsRef.current = mumbai
+        }
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 120000 },
     )
+
+    return () => {
+      window.removeEventListener('gn-open-report', handleOpenReport)
+    }
   }, [])
 
   useEffect(() => {
@@ -497,17 +515,25 @@ const App = () => {
           }} />
         </div>
 
-        <div className="flex items-center gap-3">
-          {locationBadge}
-          {onlineBadge}
-          <button
-            type="button"
-            className="hidden rounded-full border border-white/15 p-2 text-white/80 transition hover:bg-white/10 sm:flex"
-            aria-label="Notifications"
-          >
-            <IconBell size={18} />
-          </button>
-        </div>
+          <div className="flex items-center gap-3">
+            {demoActive && <span className="text-[10px] font-bold text-purple-400">DEMO</span>}
+            <button
+              type="button"
+              onClick={() => setDemoActive(true)}
+              className="rounded-full border border-white/15 px-2 py-1 text-[10px] font-semibold text-white/70 hover:bg-white/10"
+            >
+              Demo
+            </button>
+            {locationBadge}
+            {onlineBadge}
+            <button
+              type="button"
+              className="hidden rounded-full border border-white/15 p-2 text-white/80 transition hover:bg-white/10 sm:flex"
+              aria-label="Notifications"
+            >
+              <IconBell size={18} />
+            </button>
+          </div>
       </header>
 
       <main className="pt-[52px]">
@@ -664,7 +690,7 @@ const App = () => {
 
           <aside
             className={`flex flex-col transition-all duration-300 ${
-              isRightCollapsed ? 'w-16' : 'w-[260px]'
+              isRightCollapsed ? 'w-16' : 'w-[320px]'
             }`}
           >
             <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -691,12 +717,16 @@ const App = () => {
             {!isRightCollapsed && (
               <div className="mt-4 flex flex-1 flex-col gap-4 overflow-hidden">
                 <div
-                  className="flex-1 overflow-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
+                  className="flex-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-sm"
                   id="guardian-panel"
+                  style={{ maxHeight: 'calc(50vh - 60px)' }}
                 >
                   <GuardianPanel />
                 </div>
-                <div className="flex-1 overflow-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                <div
+                  className="flex-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-sm"
+                  style={{ maxHeight: 'calc(50vh - 60px)' }}
+                >
                   <ReportFeed />
                 </div>
               </div>
@@ -919,7 +949,7 @@ const App = () => {
           }
           setIsReportOpen(true)
         }}
-        className="fixed bottom-[92px] right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[color:var(--gn-blue)] text-white shadow-xl transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60 md:bottom-6"
+        className="fixed bottom-[92px] right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[color:var(--gn-blue)] text-white shadow-xl transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60 md:right-[344px] md:bottom-8"
         aria-label="Open report modal"
         disabled={!reportCoords}
       >

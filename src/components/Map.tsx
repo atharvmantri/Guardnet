@@ -14,6 +14,7 @@ import {
   Polyline,
   Popup,
   TileLayer,
+  useMap,
   useMapEvents,
 } from 'react-leaflet'
 import type { LatLngExpression, Map as LeafletMap } from 'leaflet'
@@ -22,8 +23,8 @@ import 'leaflet/dist/leaflet.css'
 import type { CommunityReport, DisasterEvent, RiskScore, Route } from '../types'
 
 const OVERPASS_URL = '/api/overpass/api/interpreter'
-const GRID_SIZE = 5
-const GRID_SPACING_KM = 1.2
+const GRID_SIZE = 3
+const GRID_SPACING_KM = 2
 
 export type Facility = {
   name: string
@@ -165,30 +166,6 @@ const MapLongPressHandler = ({
   const targetRef = useRef<{ lat: number; lng: number } | null>(null)
 
   useMapEvents({
-    touchstart: (event) => {
-      if (!onLongPress) {
-        return
-      }
-      targetRef.current = {
-        lat: event.latlng.lat,
-        lng: event.latlng.lng,
-      }
-      timerRef.current = window.setTimeout(() => {
-        if (!targetRef.current) {
-          return
-        }
-        onLongPress(targetRef.current.lat, targetRef.current.lng)
-        targetRef.current = null
-        timerRef.current = null
-      }, 500)
-    },
-    touchend: () => {
-      if (timerRef.current) {
-        window.clearTimeout(timerRef.current)
-        timerRef.current = null
-      }
-      targetRef.current = null
-    },
     mousedown: (event) => {
       if (!onLongPress) {
         return
@@ -223,22 +200,16 @@ const fetchFacilities = async (lat: number, lng: number) => {
   const lngPadding = 0.06 / Math.cos(toRadians(Math.max(-89, Math.min(89, lat))))
 
   const query = [
-    '[out:json];',
+    '[out:json][timeout:10];',
     '(',
     `node[amenity=hospital](${lat - latPadding},${
       lng - lngPadding
     },${lat + latPadding},${lng + lngPadding});`,
-    `way[amenity=hospital](${lat - latPadding},${
-      lng - lngPadding
-    },${lat + latPadding},${lng + lngPadding});`,
-    `node[emergency=yes](${lat - latPadding},${
-      lng - lngPadding
-    },${lat + latPadding},${lng + lngPadding});`,
-    `way[emergency=yes](${lat - latPadding},${
+    `node[amenity=shelter](${lat - latPadding},${
       lng - lngPadding
     },${lat + latPadding},${lng + lngPadding});`,
     ');',
-    'out center;',
+    'out center 20;',
   ].join('\n')
 
   const response = await fetch(OVERPASS_URL, {
@@ -285,6 +256,14 @@ const fetchFacilities = async (lat: number, lng: number) => {
     .filter(Boolean) as Facility[]
 }
 
+const MapController = ({ center }: { center: LatLngExpression }) => {
+  const map = useMap()
+  useEffect(() => {
+    map.setView(center)
+  }, [center, map])
+  return null
+}
+
 const Map = forwardRef<MapHandle, MapProps>(
   (
     {
@@ -323,7 +302,7 @@ const Map = forwardRef<MapHandle, MapProps>(
     }))
 
     useEffect(() => {
-      if (!navigator.geolocation) {
+      if (userLocationOverride || !navigator.geolocation) {
         return
       }
 
@@ -340,7 +319,7 @@ const Map = forwardRef<MapHandle, MapProps>(
       )
 
       return () => navigator.geolocation.clearWatch(watchId)
-    }, [])
+    }, [userLocationOverride])
 
     useEffect(() => {
       if (!resolvedLocation || !mapRef.current || hasCenteredRef.current) {
@@ -384,8 +363,7 @@ const Map = forwardRef<MapHandle, MapProps>(
             setFacilityMarkers(data)
           }
         })
-        .catch((error) => {
-          console.error('Failed to fetch facilities:', error)
+        .catch(() => {
           // Keep existing markers on error
         })
 
@@ -435,10 +413,13 @@ const Map = forwardRef<MapHandle, MapProps>(
           center={baseCenter}
           zoom={12}
           className="h-full w-full"
-          whenCreated={(mapInstance) => {
-            mapRef.current = mapInstance
+          ref={(mapInstance) => {
+            if (mapInstance) {
+              mapRef.current = mapInstance
+            }
           }}
         >
+          <MapController center={baseCenter} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

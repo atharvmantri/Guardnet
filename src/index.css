@@ -11,9 +11,11 @@
     background-color: #f8fafc; /* bg-slate-50 */
     color: #0f172a; /* text-slate-900 */
     overflow: hidden; /* Prevent body scroll */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
   }
 
-  /* Custom slim scrollbar */
+  /* Custom slim scrollbar for Webkit */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -24,6 +26,8 @@
   ::-webkit-scrollbar-thumb {
     background: rgba(148, 163, 184, 0.4);
     border-radius: 10px;
+    border: 1px solid transparent;
+    background-clip: content-box;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(148, 163, 184, 0.6);
