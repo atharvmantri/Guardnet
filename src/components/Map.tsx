@@ -364,7 +364,7 @@ const Map = forwardRef<MapHandle, MapProps>(
           }
         })
         .catch(() => {
-          // Keep existing markers on error
+          /* CORS-limited API, skip */
         })
 
       return () => {

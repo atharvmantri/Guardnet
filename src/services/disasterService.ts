@@ -368,7 +368,7 @@ const fetchGdacs = async (): Promise<DisasterEvent[]> => {
     })
     .filter(Boolean) as DisasterEvent[]
   } catch (error) {
-    console.warn('GDACS fetch failed:', error)
+    console.warn('GDACS fetch failed (CORS):', error)
     return []
   }
 }
