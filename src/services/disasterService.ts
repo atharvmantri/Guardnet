@@ -112,22 +112,6 @@ const toSeverityFromMagnitude = (mag: number): DisasterEvent['severity'] => {
   return 'low'
 }
 
-const toSeverityFromAlertLevel = (
-  level: string | null,
-): DisasterEvent['severity'] => {
-  const normalized = level?.toLowerCase() ?? ''
-  if (normalized === 'red') {
-    return 'critical'
-  }
-  if (normalized === 'orange') {
-    return 'high'
-  }
-  if (normalized === 'green') {
-    return 'low'
-  }
-  return 'medium'
-}
-
 const toTypeFromNasaCategory = (
   categoryId: number | undefined,
 ): DisasterEvent['type'] | null => {
@@ -141,28 +125,6 @@ const toTypeFromNasaCategory = (
     default:
       return null
   }
-}
-
-const toTypeFromGdacs = (
-  eventType: string | null,
-): DisasterEvent['type'] | null => {
-  const normalized = eventType?.toLowerCase() ?? ''
-  if (normalized === 'eq' || normalized === 'earthquake') {
-    return 'earthquake'
-  }
-  if (normalized === 'tc' || normalized === 'cyclone') {
-    return 'cyclone'
-  }
-  if (normalized === 'fl' || normalized === 'flood') {
-    return 'flood'
-  }
-  if (normalized === 'wf' || normalized === 'wildfire' || normalized === 'fire') {
-    return 'fire'
-  }
-  if (normalized === 'ht' || normalized === 'heatwave') {
-    return 'heatwave'
-  }
-  return null
 }
 
 const haversineDistanceKm = (
@@ -308,69 +270,8 @@ const fetchNasa = async (): Promise<DisasterEvent[]> => {
 }
 
 const fetchGdacs = async (): Promise<DisasterEvent[]> => {
-  try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 8000)
-
-    const response = await fetch('https://www.gdacs.org/xml/rss.xml', {
-      signal: controller.signal,
-    })
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      throw new Error('GDACS request failed')
-    }
-
-  const xmlText = await response.text()
-  if (typeof DOMParser === 'undefined') {
-    return []
-  }
-
-  const document = new DOMParser().parseFromString(xmlText, 'application/xml')
-  const items = Array.from(document.querySelectorAll('item'))
-
-  return items
-    .map((item) => {
-      const alertLevelRaw = item.querySelector('gdacs\\:alertlevel')?.textContent
-      const alertLevel: string | null = alertLevelRaw !== undefined ? alertLevelRaw : null;
-      const eventTypeRaw = item.querySelector('gdacs\\:eventtype')?.textContent
-      const eventType: string | null = eventTypeRaw !== undefined ? eventTypeRaw : null;
-      const type = toTypeFromGdacs(eventType)
-      if (!type) {
-        return null
-      }
-
-      const latText = item.querySelector('geo\\:lat')?.textContent
-      const lngText = item.querySelector('geo\\:long')?.textContent
-      const lat = latText ? Number(latText) : null
-      const lng = lngText ? Number(lngText) : null
-
-      if (lat == null || lng == null || Number.isNaN(lat) || Number.isNaN(lng)) {
-        return null
-      }
-
-      const title = item.querySelector('title')?.textContent ?? 'GDACS event'
-      const link = item.querySelector('link')?.textContent ?? 'https://www.gdacs.org'
-      const pubDate = item.querySelector('pubDate')?.textContent
-
-      return {
-        id: item.querySelector('guid')?.textContent ?? `gdacs-${type}-${lat}-${lng}`,
-        type,
-        title,
-        severity: toSeverityFromAlertLevel(alertLevel),
-        lat,
-        lng,
-        radius: 200,
-        source: 'gdacs',
-        timestamp: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-        url: link,
-      } satisfies DisasterEvent
-    })
-    .filter(Boolean) as DisasterEvent[]
-  } catch (error) {
-    console.warn('GDACS fetch failed (CORS):', error)
-    return []
-  }
+  // GDACS API does not support CORS from browser — skipping
+  return []
 }
 
 const loadDisasters = async (): Promise<DisasterEvent[]> => {
