@@ -951,7 +951,7 @@ const App = () => {
           }
           setIsReportOpen(true)
         }}
-        className="fixed bottom-[92px] right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[color:var(--gn-blue)] text-white shadow-xl transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60 md:right-[344px] md:bottom-8"
+        className="fixed bottom-[92px] right-6 z-[9999] flex h-14 w-14 items-center justify-center rounded-full bg-[color:var(--gn-blue)] text-white shadow-xl transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60 md:right-[344px] md:bottom-8"
         aria-label="Open report modal"
         disabled={!reportCoords}
       >
