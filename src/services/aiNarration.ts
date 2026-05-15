@@ -4,6 +4,7 @@ const OPENROUTER_URL = '/api/openrouter/api/v1/chat/completions'
 const MODEL = 'cognitivecomputations/dolphin3.0-r1-mistral-24b:free'
 const MAX_TOKENS = 120
 const CACHE_TTL_MS = 20 * 60 * 1000
+const USE_AI = false // OpenRouter API unreliable, using local fallback
 
 const SYSTEM_PROMPT =
   'You are a disaster safety announcer. Give a 2-sentence briefing - urgent but calm, no jargon, specific to the data given. First sentence: what the risk is and why. Second sentence: one concrete action the person should take right now.'
@@ -141,7 +142,7 @@ export const generateRiskBriefing = async (
   const apiKey = import.meta.env.VITE_OPENROUTER_KEY
   const fallback = buildFallbackBriefing(riskScore, locationName)
 
-  if (!apiKey || apiKey === 'YOUR_OPENROUTER_KEY') {
+  if (!USE_AI || !apiKey || apiKey === 'YOUR_OPENROUTER_KEY') {
     return fallback
   }
 
@@ -191,8 +192,7 @@ export const generateRiskBriefing = async (
 
     briefingCache.set(cacheKey, { text, ts: Date.now() })
     return text
-  } catch (error) {
-    console.error('AI narration error:', error)
+  } catch {
     return fallback
   }
 }
