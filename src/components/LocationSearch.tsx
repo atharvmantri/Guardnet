@@ -11,7 +11,7 @@ type LocationSearchProps = {
   onSelect: (lat: number, lng: number, name: string) => void
 }
 
-const NOMINATIM_URL = '/api/nominatim/search'
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
 
 export default function LocationSearch({ onSelect }: LocationSearchProps) {
   const [query, setQuery] = useState('')
@@ -34,7 +34,9 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
         format: 'jsonv2',
         limit: '5',
       })
-      const response = await fetch(`${NOMINATIM_URL}?${params.toString()}`)
+      const response = await fetch(`${NOMINATIM_URL}?${params.toString()}`, {
+        headers: { 'User-Agent': 'GuardNet/1.0' },
+      })
       if (response.ok) {
         const data = await response.json()
         setResults(data)

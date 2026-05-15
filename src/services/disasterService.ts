@@ -312,7 +312,7 @@ const fetchGdacs = async (): Promise<DisasterEvent[]> => {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 8000)
 
-    const response = await fetch('/api/gdacs/xml/rss.xml', {
+    const response = await fetch('https://www.gdacs.org/xml/rss.xml', {
       signal: controller.signal,
     })
     clearTimeout(timeoutId)

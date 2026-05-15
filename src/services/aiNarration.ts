@@ -1,10 +1,10 @@
 import type { DisasterEvent, RiskScore, WeatherData } from '../types'
 
-const OPENROUTER_URL = '/api/openrouter/api/v1/chat/completions'
-const MODEL = 'cognitivecomputations/dolphin3.0-r1-mistral-24b:free'
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const MODEL = 'openrouter/owl-alpha'
 const MAX_TOKENS = 120
 const CACHE_TTL_MS = 20 * 60 * 1000
-const USE_AI = false // OpenRouter API unreliable, using local fallback
+const USE_AI = true // OpenRouter API unreliable, using local fallback
 
 const SYSTEM_PROMPT =
   'You are a disaster safety announcer. Give a 2-sentence briefing - urgent but calm, no jargon, specific to the data given. First sentence: what the risk is and why. Second sentence: one concrete action the person should take right now.'

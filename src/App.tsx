@@ -58,7 +58,7 @@ const IconWind = makeIcon('💨')
 
 const LOCATION_REFRESH_MS = 10 * 60 * 1000
 const DISASTER_RADIUS_KM = 250
-const NOMINATIM_URL = '/api/nominatim/reverse'
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/reverse'
 const locationCache = new Map<string, string>()
 
 const riskRingColors: Record<RiskScore['level'], string> = {
@@ -195,7 +195,9 @@ const App = () => {
       if (email) {
         params.set('email', email)
       }
-      const response = await fetch(`${NOMINATIM_URL}?${params.toString()}`)
+      const response = await fetch(`${NOMINATIM_URL}?${params.toString()}`, {
+        headers: { 'User-Agent': 'GuardNet/1.0' },
+      })
       if (!response.ok) {
         throw new Error('Location lookup failed')
       }

@@ -6,7 +6,7 @@ import type { Route } from '../types'
 import { getCommunityReports } from './firebase'
 
 const ORS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car'
-const OVERPASS_URL = '/api/overpass/api/interpreter'
+const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
 const DESTINATION_DISTANCE_KM = 15
 const REPORT_PENALTY = 20
 const REPORT_DISTANCE_KM = 0.3

@@ -22,7 +22,7 @@ import { DivIcon } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { CommunityReport, DisasterEvent, RiskScore, Route } from '../types'
 
-const OVERPASS_URL = '/api/overpass/api/interpreter'
+const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
 const GRID_SIZE = 3
 const GRID_SPACING_KM = 2
 
