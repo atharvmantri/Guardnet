@@ -113,20 +113,6 @@ GuardNet launches as a community-first disaster intelligence network that turns 
 - Prioritizes reports by severity and proximity for faster action.
 - Keeps a live status board so teams coordinate without noise.
 
-## Screenshots
-
-![Dashboard](https://placehold.co/1200x675?text=Dashboard)
-*Dashboard*
-
-![Risk Map](https://placehold.co/1200x675?text=Risk%20Map)
-*Risk Map*
-
-![Guardian Panel](https://placehold.co/1200x675?text=Guardian%20Panel)
-*Guardian Panel*
-
-![Mobile View](https://placehold.co/900x1600?text=Mobile%20View)
-*Mobile View*
-
 ## Why GuardNet Wins
 
 - **Innovation:** Multi-API fusion plus AI narration delivers signal where others deliver noise.
